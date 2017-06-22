@@ -1,0 +1,130 @@
+{
+  "$schema":"https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion":"1.0.0.0",
+  "parameters":{
+    "baseUrl": {
+      "type": "string",
+      "defaultValue": "https://raw.githubusercontent.com/infobloxopen/infoblox-azure-templates/master/main/",
+      "metadata": {
+        "description": "Base URL for dependent assets."
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[ResourceGroup().Location]",
+      "metadata": {
+        "description": "Location of resources."
+      }
+    },
+     "vmNamePrefix":{
+      "type":"string",
+      "defaultValue":"azw1-nmgt-ns",
+      "metadata":{
+        "description":"Name prefix for the Virtual Machine."
+      }
+    },
+    "vmSize":{
+      "type":"string",
+      "metadata":{
+        "description":"Size of the Virtual Machine."
+      },
+      "allowedValues":[
+        "Standard_DS2",
+        "Standard_DS2_v2",
+        "Standard_DS3",
+        "Standard_DS3_v2"
+      ]
+    },
+    "niosModel":{
+      "type":"string",
+      "defaultValue":"vnios-te-v1420",
+      "metadata":{
+        "description":"niosModel."
+      },
+      "allowedValues":[
+        "vnios-te-v820",
+        "vnios-te-v1420",
+        "vnios-te-v2220",
+        "vnios-cp-v800",
+        "vnios-cp-v1400",
+        "vnios-cp-v2200"
+      ]
+    },
+    "niosVersion":{
+      "type":"string",
+      "defaultValue":"latest",
+      "metadata":{
+        "description":"niosVersion"
+      },
+      "allowedValues":[
+        "latest",
+        "800.343389.3",
+        "810.352813.0"
+      ]
+    },
+    "adminPassword":{
+      "type":"securestring",
+      "defaultValue":"",
+      "metadata":{
+        "description":"Password for the Virtual Machine."
+      }
+    },
+    "virtualNetworkName":{
+      "type":"string",
+      "defaultValue":"NIOS_Network",
+      "metadata":{
+        "description":"VNet name"
+      }
+    },
+     "storageAccountName":{
+      "type":"string",
+      "metadata":{
+        "description":"Unique Name for Storage Account where the Virtual Machine's disks will be placed."
+      }
+    },
+    "storageAccountType":{
+      "type":"string",
+      "defaultValue":"Premium_LRS",
+      "allowedValues":[
+        "Premium_LRS",
+        "Standard_LRS"
+      ],
+      "metadata":{
+        "description":"The type of storage account created."
+      }
+    }
+  },
+  "variables":{
+    "apiVersion":"2016-06-01",
+    "imagePublisher":"infoblox",
+    "imageOffer":"infoblox-vnios-te-v1420",
+    "imageSKU": "[parameters('niosModel')]",
+    "version": "[parameters('niosVersion')]",
+    "OSDiskName":"[concat(parameters('vmNamePrefix'), uniqueString(resourceGroup().id, deployment().name))]",
+    "vmStorageAccountContainerName":"disks"
+  },
+  "resources":[
+    {
+      "name":"Deploying Storage Account",
+      "type":"Microsoft.Resources/deployments",
+      "apiVersion":"[variables('apiVersion')]",
+      "properties":{
+        "mode":"Incremental",
+        "templateLink":{
+          "uri":"[variables('storageAccountSetupURL')]",
+          "contentVersion":"1.0.0.0"
+        },
+        "parameters":{
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "storageAccountType":{
+            "value":"[parameters('storageAccountType')]"
+          },
+          "storageAccountName":{
+            "value":"[parameters('storageAccountName')]"
+          }
+        }
+      }
+    }]
+}
