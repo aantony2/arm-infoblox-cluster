@@ -4,14 +4,14 @@
   "parameters":{
     "baseUrl": {
       "type": "string",
-      "defaultValue": "https://raw.githubusercontent.com/infobloxopen/infoblox-azure-templates/master/main/",
+      "defaultValue": "https://raw.githubusercontent.com/agnelantony2/arm-infoblox-cluster/master/cluster/",
       "metadata": {
         "description": "Base URL for dependent assets."
       }
     },
     "location": {
       "type": "string",
-      "defaultValue": "[ResourceGroup().Location]",
+      "defaultValue": "[resourceGroup().Location]",
       "metadata": {
         "description": "Location of resources."
       }
@@ -101,7 +101,10 @@
     "imageSKU": "[parameters('niosModel')]",
     "version": "[parameters('niosVersion')]",
     "OSDiskName":"[concat(parameters('vmNamePrefix'), uniqueString(resourceGroup().id, deployment().name))]",
-    "vmStorageAccountContainerName":"disks"
+    "vmStorageAccountContainerName":"disks",
+    "nsgName": "[concat(parameters('vmNamePrefix'),'-nsg')]",
+    "storageAccountNameDiag":"[concat(parameters('storageAccountName'),'diag')]",
+    "storageAccountSetupURL":"[concat(parameters('baseUrl'),'/storageAccount','.json')]"
   },
   "resources":[
     {
@@ -126,5 +129,137 @@
           }
         }
       }
-    }]
+    },
+    {
+      "name":"Deploying Storage Account for Diag Log",
+      "type":"Microsoft.Resources/deployments",
+      "apiVersion":"[variables('apiVersion')]",
+      "properties":{
+        "mode":"Incremental",
+        "templateLink":{
+          "uri":"[variables('storageAccountSetupURL')]",
+          "contentVersion":"1.0.0.0"
+        },
+        "parameters":{
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "storageAccountType":{
+            "value":"[parameters('storageAccountType')]"
+          },
+          "storageAccountName":{
+            "value":"[variables('storageAccountNameDiag')]"
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "[variables('apiVersion')]",
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "name": "[variables('nsgName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "ssh-in",
+            "properties": {
+              "description": "Allow SSH",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "22",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 100,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "dns-in",
+            "properties": {
+              "description": "Allow DNS",
+              "protocol": "Udp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "53",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 101,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "https-in",
+            "properties": {
+              "description": "Allow HTTPS",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "443",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 102,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "grid_traffic_UDP_1194_in",
+            "properties": {
+              "description": "Allow vNIOS Grid traffic 1194 Inbound",
+              "protocol": "Udp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "1194",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 103,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "grid_traffic_UDP_2114_in",
+            "properties": {
+              "description": "Allow vNIOS Grid traffic 2114 Inbound",
+              "protocol": "Udp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "2114",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 104,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "grid_traffic_UDP_1194_out",
+            "properties": {
+              "description": "Allow vNIOS Grid traffic 1194 Outbound",
+              "protocol": "Udp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "1194",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 105,
+              "direction": "Outbound"
+            }
+          },
+          {
+            "name": "grid_traffic_UDP_2114_out",
+            "properties": {
+              "description": "Allow vNIOS Grid traffic 2114 Outbound",
+              "protocol": "Udp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "2114",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 106,
+              "direction": "Outbound"
+            }
+          }
+        ]
+      }
+    }
+    ]
 }
