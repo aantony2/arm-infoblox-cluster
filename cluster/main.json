@@ -108,7 +108,7 @@
   },
   "resources":[
     {
-      "name":"Deploying Storage Account",
+      "name":"DeployingStorageAccount",
       "type":"Microsoft.Resources/deployments",
       "apiVersion":"[variables('apiVersion')]",
       "properties":{
@@ -131,7 +131,7 @@
       }
     },
     {
-      "name":"Deploying Storage Account for Diag Log",
+      "name":"DeployingStorageAccountForDiagnosticsLog",
       "type":"Microsoft.Resources/deployments",
       "apiVersion":"[variables('apiVersion')]",
       "properties":{
