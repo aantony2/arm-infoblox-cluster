@@ -124,6 +124,19 @@
       "metadata":{
         "description":"Use space and '\n' symbols for indentation. Some custom data parameter are not available for Azure, please refer to Azure NIOS Guide for allowed parameters."
       }
+    },
+    "tempLicenseOption":{
+      "type":"string",
+      "defaultValue":"none",
+      "allowedValues":[
+        "none",
+        "TE",
+        "CP",
+        "TE-SoT"
+      ],
+      "metadata":{
+        "description":"Temporary license option."
+      }
     }
   },
   "variables":{
@@ -134,6 +147,11 @@
     "version": "[parameters('niosVersion')]",
     "OSDiskName":"[concat(parameters('deploymentPrefix'), uniqueString(resourceGroup().id, deployment().name))]",
     "vmStorageAccountContainerName":"disks",
+    "tempLicense": "[variables(concat('tempLicense-', parameters('tempLicenseOption')))]",
+    "tempLicense-TE": "vnios enterprise dns cloud",
+    "tempLicense-CP": "vnios enterprise dns cloud_api",
+    "tempLicense-TE-SoT": "[concat('nios ', parameters('niosModel'), ' enterprise dns cloud')]",
+    "tempLicense-none": "",
     "vnetResourceId":"[resourceId(parameters('existingVnetResourceGroupName'),concat('Microsoft.Network','/','virtualNetworks'),parameters('virtualNetworkName'))]",
     "lan1SubnetResourceId":"[concat(variables('vnetResourceId'),'/subnets/',parameters('lan1SubnetName'))]",
     "mgmtSubnetResourceId":"[concat(variables('vnetResourceId'),'/subnets/',parameters('mgmtSubnetName'))]",
@@ -437,10 +455,12 @@
             }
           },
           "osProfile": {
-            "computerName":"[concat(parameters('vmNamePrefix'), copyindex(1))]",
-            "adminUsername":"[uniqueString(ResourceGroup().Id)]",
-            "adminPassword":"[parameters('adminPassword')]",
-            "customData": "[variables('customData')]"
+            "value" : {
+              "computerName":"[concat(parameters('vmNamePrefix'), copyindex(1))]",
+              "adminUsername":"[uniqueString(resourceGroup().Id)]",
+              "adminPassword":"[parameters('adminPassword')]",
+              "customData": "[variables('customData')]"
+            }
           },
           "storageProfile": {
             "value" : {
@@ -484,7 +504,7 @@
           },
           "availabilitySet": {
             "value" : {
-              "id": "[resourceId('Microsoft.Compute/availabilitySets', variables('availabilitySetName'))]"
+              "id": "[resourceId('Microsoft.Compute/availabilitySets/', variables('availabilitySetName'))]"
             }
           }
         }
