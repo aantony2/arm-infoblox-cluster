@@ -106,12 +106,6 @@
         "description":"Existing Vnet Resource Group Name."
       }
     },
-    "virtualNetworkName":{
-      "type":"string",
-      "metadata":{
-        "description":"Existing Vnet Name."
-      }
-    },
     "lan1SubnetName":{
       "type":"string",
       "metadata":{
