@@ -484,11 +484,11 @@
             "value" : {
               "networkInterfaces":[
                 {
-                  "id":"[resourceId('Microsoft.Network/networkInterfaces', parameters('vmNamePrefix'), copyindex(1), '-lan1')]",
+                  "id":"[resourceId('Microsoft.Network/networkInterfaces', concat(parameters('vmNamePrefix'), copyindex(1), '-lan1'))]",
                   "properties":{ "primary":true }
                 },
                 {
-                  "id":"[resourceId('Microsoft.Network/networkInterfaces', parameters('vmNamePrefix'), copyindex(1), '-mgmt')]",
+                  "id":"[resourceId('Microsoft.Network/networkInterfaces', concat(parameters('vmNamePrefix'), copyindex(1), '-mgmt'))]",
                   "properties":{ "primary":false }
                 }
               ]
