@@ -18,6 +18,13 @@
     },
      "vmNamePrefix":{
       "type":"string",
+      "defaultValue":"azw1-nmgt-ns0",
+      "metadata":{
+        "description":"Name prefix for the Virtual Machine."
+      }
+    },
+     "deploymentPrefix":{
+      "type":"string",
       "defaultValue":"azw1-nmgt-ns",
       "metadata":{
         "description":"Name prefix for the Virtual Machine."
@@ -92,6 +99,37 @@
       "metadata":{
         "description":"The type of storage account created."
       }
+    },
+    "existingVnetResourceGroupName":{
+      "type":"string",
+      "metadata":{
+        "description":"Existing Vnet Resource Group Name."
+      }
+    },
+    "virtualNetworkName":{
+      "type":"string",
+      "metadata":{
+        "description":"Existing Vnet Name."
+      }
+    },
+    "lan1SubnetName":{
+      "type":"string",
+      "metadata":{
+        "description":"LAN1 Subnet Name"
+      }
+    },
+    "mgmtSubnetName":{
+      "type":"string",
+      "metadata":{
+        "description":"LAN1 Subnet Name"
+      }
+    },
+     "customData":{
+      "type":"string",
+      "defaultValue":"",
+      "metadata":{
+        "description":"Use space and '\n' symbols for indentation. Some custom data parameter are not available for Azure, please refer to Azure NIOS Guide for allowed parameters."
+      }
     }
   },
   "variables":{
@@ -100,11 +138,24 @@
     "imageOffer":"infoblox-vnios-te-v1420",
     "imageSKU": "[parameters('niosModel')]",
     "version": "[parameters('niosVersion')]",
-    "OSDiskName":"[concat(parameters('vmNamePrefix'), uniqueString(resourceGroup().id, deployment().name))]",
+    "OSDiskName":"[concat(parameters('deploymentPrefix'), uniqueString(resourceGroup().id, deployment().name))]",
     "vmStorageAccountContainerName":"disks",
-    "nsgName": "[concat(parameters('vmNamePrefix'),'-nsg')]",
+    "vnetResourceId":"[resourceId(parameters('existingVnetResourceGroupName'),concat('Microsoft.Network','/','virtualNetworks'),parameters('virtualNetworkName'))]",
+    "lan1SubnetResourceId":"[concat(variables('vnetResourceId'),'/subnets/',parameters('lan1SubnetName'))]",
+    "mgmtSubnetResourceId":"[concat(variables('vnetResourceId'),'/subnets/',parameters('mgmtSubnetName'))]",
+    "nsgName": "[concat(parameters('deploymentPrefix'),'-nsg')]",
     "storageAccountNameDiag":"[concat(parameters('storageAccountName'),'diag')]",
-    "storageAccountSetupURL":"[concat(parameters('baseUrl'),'/storageAccount','.json')]"
+    "storageAccountSetupUrl":"[concat(parameters('baseUrl'),'/storageAccount','.json')]",
+    "networkInterfaceSetupUrl":"[concat(parameters('baseUrl'),'/networkInterface','.json')]",
+    "networkInterfaceLbSetupUrl":"[concat(parameters('baseUrl'),'/networkInterfaceLB','.json')]",
+    "availabilitySetSetupUrl":"[concat(parameters('baseUrl'),'/availabilitySet','.json')]",
+    "virtualMachineSetUrl":"[concat(parameters('baseUrl'),'/virtualMachineSet','.json')]",
+    "availabilitySetName":"[concat(parameters('deploymentPrefix'),'-az')]",
+    "loadBalancerName":"[concat(parameters('deploymentPrefix'),'-lb')]",
+    "loadBalancerResourceId":"[resourceId('Microsoft.Network/loadBalancers',variables('loadBalancerName'))]",
+    "sq":"'",
+    "customData": "[base64(concat('default_admin_password: ', variables('sq'), replace(parameters('adminPassword'), variables('sq'), concat(variables('sq'), variables('sq'))), variables('sq'), '\n', parameters('customData')))]",
+    "numberOfInstances":2
   },
   "resources":[
     {
@@ -114,7 +165,7 @@
       "properties":{
         "mode":"Incremental",
         "templateLink":{
-          "uri":"[variables('storageAccountSetupURL')]",
+          "uri":"[variables('storageAccountSetupUrl')]",
           "contentVersion":"1.0.0.0"
         },
         "parameters":{
@@ -137,7 +188,7 @@
       "properties":{
         "mode":"Incremental",
         "templateLink":{
-          "uri":"[variables('storageAccountSetupURL')]",
+          "uri":"[variables('storageAccountSetupUrl')]",
           "contentVersion":"1.0.0.0"
         },
         "parameters":{
@@ -257,6 +308,245 @@
               "priority": 106,
               "direction": "Outbound"
             }
+          }
+        ]
+      }
+    },
+    {
+      "name":"[concat(parameters('vmNamePrefix'), copyindex(), '-lan1')]",
+      "type":"Microsoft.Resources/deployments",
+      "apiVersion":"[variables('apiVersion')]",
+      "copy": {
+        "name": "Lan1NetworkInterfaceLoop",
+        "count": "[variables('numberOfInstances')]"
+      },
+      "dependsOn":[
+        "[concat('Microsoft.Network/networkSecurityGroups/', variables('nsgName'))]",
+        "[concat('Microsoft.Network/loadBalancers/', variables('loadBalancerName'))]"
+      ],
+      "properties":{
+        "mode":"Incremental",
+        "templateLink":{
+          "uri":"[variables('networkInterfaceLbSetupUrl')]",
+          "contentVersion":"1.0.0.0"
+        },
+        "parameters":{
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "nicName":{
+            "value":"[concat(parameters('vmNamePrefix'), copyindex(), '-lan1')]"
+          },
+          "subnetId":{
+            "value":"[variables('lan1SubnetResourceId')]"
+          },
+          "networkSecurityGroupId":{
+            "value":"[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgName'))]"
+          },
+           "loadBalancerResourceId":{
+            "value":"[variables('loadBalancerResourceId')]"
+          }
+        }
+      }
+    },
+    {
+      "name":"[concat(parameters('vmNamePrefix'), copyindex(), '-mgmt')]",
+      "type":"Microsoft.Resources/deployments",
+      "apiVersion":"[variables('apiVersion')]",
+      "copy": {
+        "name": "MgmtNetworkInterfaceLoop",
+        "count": "[variables('numberOfInstances')]"
+      },
+      "dependsOn":[
+        "[concat('Microsoft.Network/networkSecurityGroups/', variables('nsgName'))]"
+      ],
+      "properties":{
+        "mode":"Incremental",
+        "templateLink":{
+          "uri":"[variables('networkInterfaceSetupUrl')]",
+          "contentVersion":"1.0.0.0"
+        },
+        "parameters":{
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "nicName":{
+            "value":"[concat(parameters('vmNamePrefix'), copyindex(), '-mgmt')]"
+          },
+          "subnetId":{
+            "value":"[variables('mgmtSubnetResourceId')]"
+          },
+          "networkSecurityGroupId":{
+            "value":"[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgName'))]"
+          }
+        }
+      }
+    },
+    {
+      "name":"DeployingAvailabilitySet",
+      "type":"Microsoft.Resources/deployments",
+      "apiVersion":"[variables('apiVersion')]",
+      "properties":{
+        "mode":"Incremental",
+        "templateLink":{
+          "uri":"[variables('availabilitySetSetupUrl')]",
+          "contentVersion":"1.0.0.0"
+        },
+        "parameters":{
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "availabilitySetName":{
+            "value":"[variables('availabilitySetName')]"
+          }
+        }
+      }
+    },
+    {
+      "name":"[concat(parameters('vmNamePrefix'), copyindex())]",
+      "type":"Microsoft.Resources/deployments",
+      "apiVersion":"[variables('apiVersion')]",
+      "copy": {
+        "name": "VirtualMachineLoop",
+        "count": "[variables('numberOfInstances')]"
+      },
+      "dependsOn":[
+        "[concat('Microsoft.Resources/deployments/', 'DeployingStorageAccount')]",
+        "[concat('Microsoft.Resources/deployments/', 'DeployingStorageAccountForDiagnosticsLog')]",
+        "[concat('Microsoft.Resources/deployments/', parameters('vmNamePrefix'), copyindex(), '-lan1')]",
+        "[concat('Microsoft.Resources/deployments/', parameters('vmNamePrefix'), copyindex(), '-mgmt')]",
+        "[concat('Microsoft.Resources/deployments/', 'DeployingAvailabilitySet')]"
+      ],
+      "properties":{
+        "mode":"Incremental",
+        "templateLink": {
+          "uri":"[variables('virtualMachineSetUrl')]",
+          "contentVersion":"1.0.0.0"
+        },
+        "parameters":{
+          "vmName": {
+            "value" :"[concat(parameters('vmNamePrefix'), copyindex())]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "plan": {
+            "value" : {
+              "publisher": "[variables('imagePublisher')]",
+              "product": "[variables('imageOffer')]",
+              "name": "[variables('imageSKU')]"
+            }
+          },
+          "hardwareProfile": {
+            "value" : {
+              "vmSize":"[parameters('vmSize')]"
+            }
+          },
+          "osProfile": {
+            "computerName":"[concat(parameters('vmNamePrefix'), copyindex())]",
+            "adminUsername":"[uniqueString(ResourceGroup().Id)]",
+            "adminPassword":"[parameters('adminPassword')]",
+            "customData": "[variables('customData')]"
+          },
+          "storageProfile": {
+            "value" : {
+              "imageReference":{
+                "publisher":"[variables('imagePublisher')]",
+                "offer":"[variables('imageOffer')]",
+                "sku":"[variables('imageSKU')]",
+                "version":"[variables('version')]"
+              },
+              "osDisk":{
+                "name":"[variables('OSDiskName')]",
+                "vhd":{
+                  "uri":"[concat(reference('DeployingStorageAccount').outputs.endpointURL.value, variables('vmStorageAccountContainerName'), '/', variables('OSDiskName'), '.vhd')]"
+                },
+                "caching":"ReadWrite",
+                "createOption":"FromImage"
+              }
+            }
+          },
+          "networkProfile": {
+            "value" : {
+              "networkInterfaces":[
+                {
+                  "id":"[resourceId('Microsoft.Network/networkInterfaces/', parameters('vmNamePrefix'), copyindex(), '-lan1')]",
+                  "properties":{ "primary":true }
+                },
+                {
+                  "id":"[resourceId('Microsoft.Network/networkInterfaces/', parameters('vmNamePrefix'), copyindex(), '-mgmt')]",
+                  "properties":{ "primary":false }
+                }
+              ]
+            }
+          },
+          "diagnosticsProfile": {
+            "value" : {
+              "bootDiagnostics": {
+                "enabled": "true",
+                "storageUri": "[reference('DeployingStorageAccountForDiagnosticsLog').outputs.endpointURL.value]"
+              }
+            }
+          },
+          "availabilitySet": {
+            "value" : {
+              "id": "[resourceId('Microsoft.Compute/availabilitySets', variables('availabilitySetName'))]"
+            }
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "2015-05-01-preview",
+      "type": "Microsoft.Network/loadBalancers",
+      "name": "[variables('loadBalancerName')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "frontendIPConfigurations": [
+          {
+            "properties": {
+              "subnet": {
+                "id": "[variables('lan1SubnetResourceId')]"
+              },
+              "privateIPAllocationMethod": "Dynamic"
+            },
+            "name": "LoadBalancerFrontend"
+          }
+        ],
+        "backendAddressPools": [
+          {
+            "name": "BackendPool1"
+          }
+        ],
+        "loadBalancingRules": [
+          {
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('loadBalancerName')), '/frontendIpConfigurations/LoadBalancerFrontend')]"
+              },
+              "backendAddressPool": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('loadBalancerName')), '/backendAddressPools/BackendPool1')]"
+              },
+              "probe": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('loadBalancerName')), '/probes/lbprobe')]"
+              },
+              "protocol": "Tcp",
+              "frontendPort": 80,
+              "backendPort": 8080,
+              "idleTimeoutInMinutes": 15
+            },
+            "Name": "DefaultRule"
+          }
+        ],
+        "probes": [
+          {
+            "properties": {
+              "protocol": "Tcp",
+              "port": 8080,
+              "intervalInSeconds": 15,
+              "numberOfProbes": 2
+            },
+            "name": "DefaultProbe"
           }
         ]
       }
