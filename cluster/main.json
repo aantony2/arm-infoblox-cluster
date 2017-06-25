@@ -473,7 +473,7 @@
               "osDisk":{
                 "name":"[variables('OSDiskName')]",
                 "vhd":{
-                  "uri":"[concat(reference('DeployingStorageAccount').outputs.endpointURL.value, variables('vmStorageAccountContainerName'), '/', variables('OSDiskName'), '.vhd')]"
+                  "uri":"[concat(reference('DeployingStorageAccount').outputs.endpointURL.value, variables('vmStorageAccountContainerName'), '/', variables('OSDiskName'), copyindex(1), '.vhd')]"
                 },
                 "caching":"ReadWrite",
                 "createOption":"FromImage"
