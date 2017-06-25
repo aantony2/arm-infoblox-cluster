@@ -307,7 +307,7 @@
       }
     },
     {
-      "name":"[concat(parameters('vmNamePrefix'), copyindex(), '-lan1')]",
+      "name":"[concat(parameters('vmNamePrefix'), copyindex(1), '-lan1')]",
       "type":"Microsoft.Resources/deployments",
       "apiVersion":"[variables('apiVersion')]",
       "copy": {
@@ -329,7 +329,7 @@
             "value": "[parameters('location')]"
           },
           "nicName":{
-            "value":"[concat(parameters('vmNamePrefix'), copyindex(), '-lan1')]"
+            "value":"[concat(parameters('vmNamePrefix'), copyindex(1), '-lan1')]"
           },
           "subnetId":{
             "value":"[variables('lan1SubnetResourceId')]"
@@ -344,7 +344,7 @@
       }
     },
     {
-      "name":"[concat(parameters('vmNamePrefix'), copyindex(), '-mgmt')]",
+      "name":"[concat(parameters('vmNamePrefix'), copyindex(1), '-mgmt')]",
       "type":"Microsoft.Resources/deployments",
       "apiVersion":"[variables('apiVersion')]",
       "copy": {
@@ -365,7 +365,7 @@
             "value": "[parameters('location')]"
           },
           "nicName":{
-            "value":"[concat(parameters('vmNamePrefix'), copyindex(), '-mgmt')]"
+            "value":"[concat(parameters('vmNamePrefix'), copyindex(1), '-mgmt')]"
           },
           "subnetId":{
             "value":"[variables('mgmtSubnetResourceId')]"
@@ -397,7 +397,7 @@
       }
     },
     {
-      "name":"[concat(parameters('vmNamePrefix'), copyindex())]",
+      "name":"[concat(parameters('vmNamePrefix'), copyindex(1))]",
       "type":"Microsoft.Resources/deployments",
       "apiVersion":"[variables('apiVersion')]",
       "copy": {
@@ -407,8 +407,8 @@
       "dependsOn":[
         "[concat('Microsoft.Resources/deployments/', 'DeployingStorageAccount')]",
         "[concat('Microsoft.Resources/deployments/', 'DeployingStorageAccountForDiagnosticsLog')]",
-        "[concat('Microsoft.Resources/deployments/', parameters('vmNamePrefix'), copyindex(), '-lan1')]",
-        "[concat('Microsoft.Resources/deployments/', parameters('vmNamePrefix'), copyindex(), '-mgmt')]",
+        "[concat('Microsoft.Resources/deployments/', parameters('vmNamePrefix'), copyindex(1), '-lan1')]",
+        "[concat('Microsoft.Resources/deployments/', parameters('vmNamePrefix'), copyindex(1), '-mgmt')]",
         "[concat('Microsoft.Resources/deployments/', 'DeployingAvailabilitySet')]"
       ],
       "properties":{
@@ -419,7 +419,7 @@
         },
         "parameters":{
           "vmName": {
-            "value" :"[concat(parameters('vmNamePrefix'), copyindex())]"
+            "value" :"[concat(parameters('vmNamePrefix'), copyindex(1))]"
           },
           "location": {
             "value": "[parameters('location')]"
@@ -437,7 +437,7 @@
             }
           },
           "osProfile": {
-            "computerName":"[concat(parameters('vmNamePrefix'), copyindex())]",
+            "computerName":"[concat(parameters('vmNamePrefix'), copyindex(1))]",
             "adminUsername":"[uniqueString(ResourceGroup().Id)]",
             "adminPassword":"[parameters('adminPassword')]",
             "customData": "[variables('customData')]"
@@ -464,11 +464,11 @@
             "value" : {
               "networkInterfaces":[
                 {
-                  "id":"[resourceId('Microsoft.Network/networkInterfaces/', parameters('vmNamePrefix'), copyindex(), '-lan1')]",
+                  "id":"[resourceId('Microsoft.Network/networkInterfaces/', parameters('vmNamePrefix'), copyindex(1), '-lan1')]",
                   "properties":{ "primary":true }
                 },
                 {
-                  "id":"[resourceId('Microsoft.Network/networkInterfaces/', parameters('vmNamePrefix'), copyindex(), '-mgmt')]",
+                  "id":"[resourceId('Microsoft.Network/networkInterfaces/', parameters('vmNamePrefix'), copyindex(1), '-mgmt')]",
                   "properties":{ "primary":false }
                 }
               ]
