@@ -35,7 +35,7 @@
               },
               "loadBalancerBackendAddressPools": [
                 {
-                  "id": "[concat(variables('loadBalancerResourceId'), '/backendAddressPools/BackendPool1')]"
+                  "id": "[concat(parameters('loadBalancerResourceId'), '/backendAddressPools/BackendPool1')]"
                 }
               ]
             }
