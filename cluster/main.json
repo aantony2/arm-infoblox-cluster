@@ -146,7 +146,7 @@
     "virtualMachineSetUrl":"[concat(parameters('baseUrl'),'/virtualMachineSet','.json')]",
     "availabilitySetName":"[concat(parameters('deploymentPrefix'),'-az')]",
     "loadBalancerName":"[concat(parameters('deploymentPrefix'),'-lb')]",
-    "loadBalancerResourceId":"[resourceId('Microsoft.Network/loadBalancers',variables('loadBalancerName'))]",
+    "loadBalancerResourceId":"[resourceId('Microsoft.Network/loadBalancers/',variables('loadBalancerName'))]",
     "sq":"'",
     "customData": "[base64(concat('default_admin_password: ', variables('sq'), replace(parameters('adminPassword'), variables('sq'), concat(variables('sq'), variables('sq'))), variables('sq'), '\n', parameters('customData')))]",
     "numberOfInstances":2
